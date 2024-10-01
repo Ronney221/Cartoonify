@@ -53,3 +53,13 @@ Interested in collaborating or learning more about this project? Feel free to re
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/ronney221/Cartoonify/issues) or submit a pull request.
 
 ---
+
+## Project Screenshots
+
+![upload](https://github.com/user-attachments/assets/e5641c04-ee8d-44bd-aa3d-68709414fb03)
+![style](https://github.com/user-attachments/assets/a7682a31-5cdb-4b14-ab31-21099bcbe02d)
+![crop](https://github.com/user-attachments/assets/573a9c3e-6516-4abc-9c6a-45b04371dc17)
+![upload](https://github.com/user-attachments/assets/69784e04-fcc6-46fc-a64c-be7da659f922)
+![results](https://github.com/user-attachments/assets/bfb5c4bb-36a4-46d3-8245-f4cdf950c74c)
+
+
