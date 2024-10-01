@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Style Transfer with Image Cropping</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" />
+
+    <script>
+        function submitForm(event) {
+            event.preventDefault();
+            document.getElementById("loading").style.display = "block";  // Show loading spinner
+            var formData = new FormData(document.getElementById("uploadForm"));
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/upload", true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    window.location.href = xhr.responseURL;  // Redirect to generated image page
+                }
+            };
+            xhr.send(formData);
+        }
+    </script>
+
+</head>
+<body class="bg-light">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#">AI Style Transfer</a>
+    </div>
+</nav>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="text-center mb-4">Upload and Crop Your Image</h1>
+
+            <!-- Form to upload an image -->
+            <form id="uploadForm" enctype="multipart/form-data" class="card p-4 shadow">
+                <div class="form-group mb-3">
+                    <label for="file" class="form-label">Upload a photo:</label>
+                    <input type="file" name="file" id="fileInput" accept="image/*" class="form-control" required>
+                </div>
+
+                <!-- Image cropping area -->
+                <div class="form-group mb-3">
+                    <img id="imagePreview" style="max-width: 100%; display: none;">
+                </div>
+
+                <!-- Style selection -->
+                <div class="form-group mb-3">
+                    <label for="style" class="form-label">Select a style:</label>
+                    <select name="style" id="style" class="form-select" required>
+                        <option value="zebra">Zebra</option>
+                        <option value="vangogh">Van Gogh</option>
+                        <option value="monet">Monet</option>
+                        <option value="ukiyoe">Ukiyo-e</option>
+                    </select>
+                </div>
+
+                <!-- Crop and submit buttons -->
+                <div class="form-group">
+                    <button type="button" id="cropButton" class="btn btn-info" style="display: none;">Crop Image</button>
+                    <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>Generate Stylized Image</button>
+                </div>
+            </form>
+
+            <!-- Loading Spinner -->
+            <div id="loading" class="text-center mt-4" style="display:none;">
+                <p>Processing your image...</p>
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Display previously generated images -->
+            <hr class="my-5">
+            <h2 class="text-center mb-4">Previously Generated Images</h2>
+
+            <div class="row">
+                {% if generated_images %}
+                {% for image in generated_images %}
+                <div class="col-md-3 col-sm-6 mb-4 text-center">
+                    <a href="{{ url_for('static', filename='avatars/' + image) }}" target="_blank">
+                        <img src="{{ url_for('static', filename='avatars/' + image) }}" class="img-fluid rounded shadow" alt="Generated Image">
+                    </a>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-center">No generated images yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2023 AI Style Transfer</p>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Cropper.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
+<script>
+    let cropper;
+    let croppedCanvas;  // Declare croppedCanvas globally
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const cropButton = document.getElementById('cropButton');
+    const submitButton = document.getElementById('submitBtn');
+
+    // Event listener for file input change
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';  // Show the image for preview
+
+                // Initialize cropper
+                cropper = new Cropper(imagePreview, {
+                    aspectRatio: 1,  // You can change the aspect ratio if needed
+                    viewMode: 2,
+                });
+
+                // Show the crop button
+                cropButton.style.display = 'inline-block';
+                submitButton.disabled = true;  // Disable submit until the image is cropped
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Event listener for crop button click
+    cropButton.addEventListener('click', function() {
+        croppedCanvas = cropper.getCroppedCanvas();  // Crop the image
+        imagePreview.src = croppedCanvas.toDataURL('image/jpeg');  // Show cropped image in the preview
+        cropper.destroy();  // Remove cropper after cropping
+        cropButton.style.display = 'none';  // Hide crop button after cropping
+        submitButton.disabled = false;  // Enable submit button
+    });
+
+    // Event listener for form submission
+    document.getElementById('uploadForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('style', document.getElementById('style').value);
+
+        // Convert cropped image to a Blob and append it to the form
+        croppedCanvas.toBlob(function(blob) {
+            formData.append('file', blob, 'cropped_image.jpg');
+
+            // Submit form data via AJAX
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Parse the JSON response to get the actual filename
+                    const response = JSON.parse(xhr.responseText);
+                    const avatar_filename = response.avatar_filename;
+
+                    // Redirect to the avatar display page with the actual filename
+                    window.location.href = '/avatar/' + avatar_filename;
+                } else {
+                    console.error("Upload failed: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function() {
+                console.error("XHR request failed");
+            };
+
+            xhr.send(formData);  // Send form data with cropped image
+        });
+    });
+
+
+</script>
+</body>
+</html>
